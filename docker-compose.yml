@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+
+  web:
+    build: .
+    image: web
+    container_name: web
+    ports:
+      - '5004:5000'
+    command: python manage.py run -h 0.0.0.0
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - FLASK_DEBUG=1
+      - APP_SETTINGS=src.server.config.DevelopmentConfig
+    depends_on:
+      - redis
+
+  worker:
+    image: web
+    # Notice how the app configuration and definitions are carried over by calling 'manage.py' here. Also notice that 'run_worker' is the customer CLI command specified in manage.py
+    command: python manage.py run_worker
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - APP_SETTINGS=src.server.config.DevelopmentConfig
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:4.0.11-alpine
+
+  rq-dashboard:
+    build: ./src/rq-dashboard
+    image: dashboard
+    container_name: dashboard
+    ports:
+      - '9181:9181'
+    command: rq-dashboard -H redis
